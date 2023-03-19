@@ -28,7 +28,11 @@ def pyblock_macro_handler(x):
 
 jmp_istr_table = {
     "z"  : "bnz",
-    "nz" : "brz"
+    "nz" : "brz",
+    "le" : "brg",
+    "ge" : "brl",
+    "g"  : "ble",
+    "l"  : "bge"
 }
 
 def if_macro_handler(x):
@@ -37,10 +41,11 @@ def if_macro_handler(x):
 
     x = x[0].split()
 
-    if( x[0] in jmp_istr_table and x[2] == '{' ):
+    if( x[0] in jmp_istr_table and x[-1] == '{' ):
         local_urf_label_num = urf_label_num
         urf_label_num += 1
-        print(jmp_istr_table[x[0]]+' ._urf'+str(local_urf_label_num)+'_else'+' '+x[1], file=outfile )
+        istr_ops = x[1] + ( ' ' + x[2] if x[2] !=  '{' else '' )
+        print(jmp_istr_table[x[0]]+' ._urf'+str(local_urf_label_num)+'_else'+' '+istr_ops, file=outfile )
         adj_macro = main_parser()
         #print(adj_macro) 
         if(adj_macro[0] == 'else' and adj_macro[1] == '{' ):
@@ -74,9 +79,24 @@ def func_macro_handler(x):
     x = x[0].split()
     #print(x)
     print('.'+x[0]+'\npsh r1\nmov r1 sp \nsub sp sp '+x[1], file=outfile )
+    scope_dict_stack.append({})
     main_parser()
+    scope_dict_stack.pop()
     print('mov sp r1\npop r1\nret', file=outfile )
 
+#loc variable handler
+
+def nameloc_handler(x):
+    x = x[0].split()
+    scope_dict_stack[-1][x[0]] = x[1]
+
+def getloc_handler(x):
+    x = x[0].split()
+    print('sub r1 r1 '+scope_dict_stack[-1][x[1]] + '\nlod '+ x[0] + ' r1\nadd r1 r1 '+ scope_dict_stack[-1][x[1]], file=outfile )
+
+def setloc_handler(x):
+    x = x[0].split()
+    print('sub r1 r1 '+scope_dict_stack[-1][x[0]] + '\nstr r1 '+ x[1] + '\nadd r1 r1 '+ scope_dict_stack[-1][x[0]], file=outfile )
 
 #main (non ajd) macros dictionary
 
@@ -84,7 +104,10 @@ macros = {
     "{" : pyblock_macro_handler,
     "if" : if_macro_handler,
     "loop" : loop_macro_handler,
-    "func" : func_macro_handler
+    "func" : func_macro_handler,
+    "nameloc" : nameloc_handler,
+    "getloc" : getloc_handler,
+    "setloc" : setloc_handler
 }
 
 
