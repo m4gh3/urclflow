@@ -3,7 +3,7 @@
 #URCL flow compiler v0.2022.03
 
 import sys
-
+import re
 
 #io files
 
@@ -34,6 +34,12 @@ jmp_istr_table = {
     "g"  : "ble",
     "l"  : "bge"
 }
+
+def syntax_check_reg(rstr):
+    return re.fullmatch("r[0-9]+", rstr ) != None
+
+def syntax_chek_num(nstr):
+    return re.fullmatch("(0x([0-9]|[a-f]|[A-F])+)|([0-9]+)", nstr ) != None
 
 def if_macro_handler(x):
 
